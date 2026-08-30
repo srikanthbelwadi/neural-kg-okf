@@ -1,0 +1,914 @@
+#!/usr/bin/env python3
+"""Modern Glassmorphic Visual Web Experience for Neural KG / ARD + OKF.
+
+Features:
+- Glassmorphism & Modern Dark/Light Design with Tailwind CSS, Lucide Icons, Chart.js, D3.js, & Mermaid
+- Dynamic Infographics & KPI Metric Cards
+- Interactive DataTables with search, column sorting, pagination, and CSV export
+- Interactive Charts (Bar, Timeseries Line, Area, Donut)
+- US Geographic Choropleth Map for Census & Health indicators
+- Network Graph Visualization for IRS 990 Grant Funders & Recipients
+- Ambiguity Clarification Modal with real fetched numbers
+- Real-time Streaming ARD Trace & Query Inspector
+- Public BigQuery Datasets Catalog Browser
+"""
+
+MODERN_PAGE = r"""<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Neural KG — Agentic Resource Discovery & Open Knowledge Format</title>
+  
+  <!-- Tailwind CSS & Inter Font -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              400: '#60a5fa',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a',
+              950: '#172554',
+            },
+            dark: {
+              card: '#131b2e',
+              bg: '#0a0e17',
+              border: '#202b42',
+              hover: '#1a243d'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Chart.js & Lucide Icons -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #0a0e17;
+      color: #f1f5f9;
+    }
+    code, pre, .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .glass {
+      background: rgba(19, 27, 46, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-card {
+      background: rgba(23, 33, 56, 0.6);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+    }
+    .glow-brand {
+      box-shadow: 0 0 35px -5px rgba(59, 130, 246, 0.25);
+    }
+    .scrollbar-thin::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    @keyframes pulse-slow {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.8; transform: scale(0.98); }
+    }
+    .animate-pulse-slow {
+      animation: pulse-slow 3s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white">
+
+  <!-- Top Navigation Bar -->
+  <header class="sticky top-0 z-50 glass border-b border-dark-border px-6 py-3.5 flex items-center justify-between">
+    <div class="flex items-center gap-3.5">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-brand-500/20">
+        <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">Neural KG</span>
+          <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-400 border border-brand-500/30">ARD + OKF</span>
+        </div>
+        <p class="text-xs text-slate-400">Agentic Resource Discovery & BigQuery Universal Knowledge</p>
+      </div>
+    </div>
+
+    <!-- Center Navigation Tabs -->
+    <nav class="hidden md:flex items-center p-1 rounded-xl bg-dark-bg/80 border border-dark-border text-sm">
+      <button onclick="switchTab('query')" id="tab-query" class="px-4 py-1.5 rounded-lg font-medium transition-all bg-brand-600 text-white shadow-sm flex items-center gap-2">
+        <i data-lucide="search" class="w-4 h-4"></i> Query Explorer
+      </button>
+      <button onclick="switchTab('catalog')" id="tab-catalog" class="px-4 py-1.5 rounded-lg font-medium text-slate-400 hover:text-slate-200 transition-all flex items-center gap-2">
+        <i data-lucide="database" class="w-4 h-4"></i> BigQuery & OKF Catalog
+      </button>
+      <button onclick="switchTab('how')" id="tab-how" class="px-4 py-1.5 rounded-lg font-medium text-slate-400 hover:text-slate-200 transition-all flex items-center gap-2">
+        <i data-lucide="cpu" class="w-4 h-4"></i> How It Works
+      </button>
+    </nav>
+
+    <!-- Right Actions & Links -->
+    <div class="flex items-center gap-3">
+      <a href="https://cloud.google.com/blog/products/data-analytics/how-the-open-knowledge-format-can-improve-data-sharing" target="_blank" class="text-xs text-slate-400 hover:text-brand-400 transition-colors flex items-center gap-1.5 bg-dark-card px-3 py-1.5 rounded-lg border border-dark-border">
+        <i data-lucide="file-text" class="w-3.5 h-3.5"></i> OKF Spec
+      </a>
+      <a href="https://github.com/TechSoup/resource-raiser" target="_blank" class="text-xs text-slate-300 hover:text-white transition-colors flex items-center gap-1.5 bg-brand-950/60 text-brand-300 px-3 py-1.5 rounded-lg border border-brand-800/50">
+        <i data-lucide="github" class="w-3.5 h-3.5"></i> GitHub
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-8 flex flex-col gap-8">
+    
+    <!-- Tab 1: Query Explorer -->
+    <section id="view-query" class="flex flex-col gap-6">
+      
+      <!-- Hero & Prompt Bar -->
+      <div class="flex flex-col items-center text-center gap-3 max-w-3xl mx-auto mt-4">
+        <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight bg-gradient-to-b from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
+          Explore Any Data with Agentic Discovery
+        </h1>
+        <p class="text-sm text-slate-400 leading-relaxed max-w-2xl">
+          Ask questions across US Census, SEC EDGAR, IRS 990 Grant Graph, CDC PLACES, NOAA Weather, and all Google Cloud Public BigQuery Datasets.
+        </p>
+      </div>
+
+      <!-- Search Input Container -->
+      <div class="max-w-4xl w-full mx-auto">
+        <form id="search-form" class="relative group">
+          <div class="absolute inset-0 bg-gradient-to-r from-brand-600 to-indigo-600 rounded-2xl blur-md opacity-25 group-hover:opacity-40 transition-opacity"></div>
+          <div class="relative flex items-center glass rounded-2xl border border-slate-700/80 p-2 shadow-2xl">
+            <div class="pl-4 pr-2 text-slate-400">
+              <i data-lucide="search" class="w-5 h-5 text-brand-400"></i>
+            </div>
+            <input 
+              id="query-input" 
+              type="text" 
+              autocomplete="off"
+              placeholder="e.g. Which foundations fund Stanford? or What is the poverty rate in Cook County?" 
+              class="w-full bg-transparent text-white placeholder-slate-400 focus:outline-none px-2 py-2.5 text-base font-normal"
+              autofocus
+            >
+            <button 
+              id="submit-btn" 
+              type="submit" 
+              class="bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-medium px-6 py-3 rounded-xl transition-all shadow-lg shadow-brand-600/30 flex items-center gap-2 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span>Ask</span>
+              <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </form>
+
+        <!-- Suggested Queries Chips -->
+        <div class="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs">
+          <span class="text-slate-400 flex items-center gap-1"><i data-lucide="zap" class="w-3.5 h-3.5 text-amber-400"></i> Try asking:</span>
+          <button onclick="setQuery('Which foundations fund Stanford?')" class="px-3 py-1 rounded-full bg-dark-card hover:bg-dark-hover border border-dark-border text-slate-300 hover:text-brand-300 transition-all">
+            Which foundations fund Stanford?
+          </button>
+          <button onclick="setQuery('What was Apple total revenue in 2023?')" class="px-3 py-1 rounded-full bg-dark-card hover:bg-dark-hover border border-dark-border text-slate-300 hover:text-brand-300 transition-all">
+            Apple's total revenue in 2023
+          </button>
+          <button onclick="setQuery('Which counties have the highest poverty rate in the US?')" class="px-3 py-1 rounded-full bg-dark-card hover:bg-dark-hover border border-dark-border text-slate-300 hover:text-brand-300 transition-all">
+            Highest poverty rate counties (BQ ACS)
+          </button>
+          <button onclick="setQuery('Which public companies have the highest gross profit?')" class="px-3 py-1 rounded-full bg-dark-card hover:bg-dark-hover border border-dark-border text-slate-300 hover:text-brand-300 transition-all">
+            Top gross profit companies (SEC BQ)
+          </button>
+          <button onclick="setQuery('Which counties have the highest diabetes prevalence?')" class="px-3 py-1 rounded-full bg-dark-card hover:bg-dark-hover border border-dark-border text-slate-300 hover:text-brand-300 transition-all">
+            CDC diabetes rates by county
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Execution & Status Stream Drawer -->
+      <div id="trace-panel" class="hidden max-w-4xl w-full mx-auto glass rounded-2xl p-4 border border-dark-border">
+        <div class="flex items-center justify-between border-b border-dark-border pb-3 mb-3">
+          <div class="flex items-center gap-2 text-sm font-semibold text-slate-200">
+            <span class="relative flex h-2.5 w-2.5">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-brand-500"></span>
+            </span>
+            <span id="trace-status">Agentic Execution in Progress...</span>
+          </div>
+          <span id="elapsed-time" class="text-xs font-mono text-slate-400">0.0s</span>
+        </div>
+        <div id="trace-logs" class="flex flex-col gap-1.5 text-xs font-mono text-slate-300 max-h-48 overflow-y-auto scrollbar-thin"></div>
+      </div>
+
+      <!-- Ambiguity Clarification Card (Shown when on_ambiguity = ask) -->
+      <div id="clarification-card" class="hidden max-w-4xl w-full mx-auto glass rounded-2xl p-6 border-2 border-amber-500/40 bg-amber-950/10">
+        <div class="flex items-start gap-3">
+          <div class="p-2 rounded-lg bg-amber-500/20 text-amber-400 shrink-0">
+            <i data-lucide="help-circle" class="w-5 h-5"></i>
+          </div>
+          <div class="flex-1">
+            <h3 class="text-base font-bold text-amber-200" id="clarify-title">Clarification Needed</h3>
+            <p class="text-sm text-slate-300 mt-1" id="clarify-desc"></p>
+            <div id="clarify-options" class="mt-4 flex flex-col gap-2.5"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Answer & Visual Analytics Canvas -->
+      <div id="results-canvas" class="hidden max-w-5xl w-full mx-auto flex flex-col gap-6">
+        
+        <!-- Grounded Answer Banner -->
+        <div class="glass-card rounded-2xl p-6 border-l-4 border-emerald-500 shadow-xl">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+              <i data-lucide="check-circle" class="w-4 h-4"></i> Grounded AI Response
+            </span>
+            <span id="provenance-badge" class="text-xs font-medium px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700"></span>
+          </div>
+          <div id="synthesized-answer" class="text-base sm:text-lg text-slate-100 font-medium leading-relaxed"></div>
+        </div>
+
+        <!-- Dynamic Visual Blocks Container (KPIs, Tables, Charts, Maps, Network) -->
+        <div id="visual-blocks-container" class="grid grid-cols-1 gap-6"></div>
+
+      </div>
+
+    </section>
+
+    <!-- Tab 2: BigQuery & OKF Catalog -->
+    <section id="view-catalog" class="hidden flex flex-col gap-6">
+      <div class="flex flex-col gap-2">
+        <h2 class="text-2xl font-bold text-white">Universal BigQuery & OKF Data Catalog</h2>
+        <p class="text-sm text-slate-400">
+          Discover all connected data sources described as actionable Open Knowledge Format (OKF) descriptors.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="catalog-grid">
+        <!-- BigQuery ACS -->
+        <div class="glass-card rounded-xl p-5 flex flex-col justify-between border border-dark-border hover:border-brand-500/50 transition-all">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-semibold px-2 py-0.5 rounded bg-brand-500/20 text-brand-300 border border-brand-500/30">Google BigQuery</span>
+              <span class="text-xs text-slate-400 font-mono">county_2018_5yr</span>
+            </div>
+            <h3 class="font-bold text-white text-base">US Census ACS 5-Year County Statistics</h3>
+            <p class="text-xs text-slate-300 mt-1 leading-relaxed">
+              Demographics, median household income, poverty rate, and education levels across ~3,200 US counties with server-side SQL aggregation.
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-dark-border flex items-center justify-between text-xs">
+            <span class="text-slate-400">bigquery-public-data.census_bureau_acs</span>
+            <button onclick="setQuery('Which county has the highest median household income?')" class="text-brand-400 hover:text-brand-300 font-medium">Query ›</button>
+          </div>
+        </div>
+
+        <!-- SEC EDGAR -->
+        <div class="glass-card rounded-xl p-5 flex flex-col justify-between border border-dark-border hover:border-brand-500/50 transition-all">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-semibold px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">SEC EDGAR + BQ</span>
+              <span class="text-xs text-slate-400 font-mono">~8,100 concepts</span>
+            </div>
+            <h3 class="font-bold text-white text-base">SEC Quarterly Financials (US-GAAP)</h3>
+            <p class="text-xs text-slate-300 mt-1 leading-relaxed">
+              Total revenue, net income, operating expenses, assets, and liabilities for all publicly traded US companies.
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-dark-border flex items-center justify-between text-xs">
+            <span class="text-slate-400">sec.gov & bigquery-public-data</span>
+            <button onclick="setQuery('What was Apple total revenue in 2023?')" class="text-brand-400 hover:text-brand-300 font-medium">Query ›</button>
+          </div>
+        </div>
+
+        <!-- IRS 990 Grant Graph -->
+        <div class="glass-card rounded-xl p-5 flex flex-col justify-between border border-dark-border hover:border-brand-500/50 transition-all">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Relational Graph</span>
+              <span class="text-xs text-slate-400 font-mono">~7M Grant Edges</span>
+            </div>
+            <h3 class="font-bold text-white text-base">IRS 990 Grant Graph (Who Funds Whom)</h3>
+            <p class="text-xs text-slate-300 mt-1 leading-relaxed">
+              Bilateral funder-to-recipient grant edges across all US foundations and 501(c)(3) charities from IRS e-file Form 990/990-PF.
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-dark-border flex items-center justify-between text-xs">
+            <span class="text-slate-400">IRS Form 990 E-File Corpus</span>
+            <button onclick="setQuery('Which foundations fund Stanford?')" class="text-brand-400 hover:text-brand-300 font-medium">Query ›</button>
+          </div>
+        </div>
+
+        <!-- CDC PLACES -->
+        <div class="glass-card rounded-xl p-5 flex flex-col justify-between border border-dark-border hover:border-brand-500/50 transition-all">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-semibold px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30">CDC Health Data</span>
+              <span class="text-xs text-slate-400 font-mono">40+ Measures</span>
+            </div>
+            <h3 class="font-bold text-white text-base">CDC PLACES Local Health Estimates</h3>
+            <p class="text-xs text-slate-300 mt-1 leading-relaxed">
+              County and city prevalence for diabetes, obesity, high blood pressure, mental health, and health insurance access.
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-dark-border flex items-center justify-between text-xs">
+            <span class="text-slate-400">bigquery-public-data.cdc_places</span>
+            <button onclick="setQuery('Which counties have the highest obesity rate?')" class="text-brand-400 hover:text-brand-300 font-medium">Query ›</button>
+          </div>
+        </div>
+
+        <!-- NOAA Weather -->
+        <div class="glass-card rounded-xl p-5 flex flex-col justify-between border border-dark-border hover:border-brand-500/50 transition-all">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-semibold px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">NOAA GSOD</span>
+              <span class="text-xs text-slate-400 font-mono">9,000+ Stations</span>
+            </div>
+            <h3 class="font-bold text-white text-base">NOAA Global Surface Weather</h3>
+            <p class="text-xs text-slate-300 mt-1 leading-relaxed">
+              Global surface summary of the day: daily temperatures, max/min records, precipitation, and wind speeds worldwide.
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-dark-border flex items-center justify-between text-xs">
+            <span class="text-slate-400">bigquery-public-data.noaa_gsod</span>
+            <button onclick="setQuery('What was the hottest weather station in 2023?')" class="text-brand-400 hover:text-brand-300 font-medium">Query ›</button>
+          </div>
+        </div>
+
+        <!-- US Treasury -->
+        <div class="glass-card rounded-xl p-5 flex flex-col justify-between border border-dark-border hover:border-brand-500/50 transition-all">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-semibold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">US Treasury</span>
+              <span class="text-xs text-slate-400 font-mono">180+ Series</span>
+            </div>
+            <h3 class="font-bold text-white text-base">Treasury Fiscal Data</h3>
+            <p class="text-xs text-slate-300 mt-1 leading-relaxed">
+              National debt, interest rates, currency exchange rates, and monthly treasury statements from fiscaldata.treasury.gov.
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-dark-border flex items-center justify-between text-xs">
+            <span class="text-slate-400">fiscaldata.treasury.gov</span>
+            <button onclick="setQuery('What is the current US national debt?')" class="text-brand-400 hover:text-brand-300 font-medium">Query ›</button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Tab 3: How It Works & Architecture -->
+    <section id="view-how" class="hidden flex flex-col gap-6">
+      <div class="glass rounded-2xl p-6 sm:p-8 flex flex-col gap-6">
+        <h2 class="text-2xl font-bold text-white">How Neural KG Works: The Life of a Query</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="p-4 rounded-xl bg-dark-card border border-dark-border">
+            <span class="text-brand-400 font-bold text-sm">1. Model-Directed Intent</span>
+            <p class="text-xs text-slate-300 mt-1">
+              Gemini classifies the query into one of 11 operational shapes (point, comparison, ranking, timeseries, etc.) and isolates the core measure.
+            </p>
+          </div>
+          <div class="p-4 rounded-xl bg-dark-card border border-dark-border">
+            <span class="text-brand-400 font-bold text-sm">2. ARD Discovery</span>
+            <p class="text-xs text-slate-300 mt-1">
+              The in-memory ARD vector index retrieves relevant OKF table descriptors across ~10,400 concepts without copying source data.
+            </p>
+          </div>
+          <div class="p-4 rounded-xl bg-dark-card border border-dark-border">
+            <span class="text-brand-400 font-bold text-sm">3. Pre-Network Planning</span>
+            <p class="text-xs text-slate-300 mt-1">
+              Checks if the source structurally supports the query shape before touching the network. Impossible queries are refused without faking numbers.
+            </p>
+          </div>
+          <div class="p-4 rounded-xl bg-dark-card border border-dark-border">
+            <span class="text-brand-400 font-bold text-sm">4. Entity Crosswalk</span>
+            <p class="text-xs text-slate-300 mt-1">
+              Resolves names to universal identifiers (CIK, EIN, FIPS, QID, LEI) required by the target publisher or BigQuery table.
+            </p>
+          </div>
+          <div class="p-4 rounded-xl bg-dark-card border border-dark-border">
+            <span class="text-brand-400 font-bold text-sm">5. Deterministic Validation</span>
+            <p class="text-xs text-slate-300 mt-1">
+              Validates units, currency, period, and missing-data sentinels. Automatically backtracks to next candidate if data is missing or mismatched.
+            </p>
+          </div>
+          <div class="p-4 rounded-xl bg-dark-card border border-dark-border">
+            <span class="text-brand-400 font-bold text-sm">6. Grounded Synthesis</span>
+            <p class="text-xs text-slate-300 mt-1">
+              Synthesizes grounded explanations quoting only verified facts, and generates rich interactive visual cards, charts, and tables.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="mt-auto border-t border-dark-border py-6 px-6 text-center text-xs text-slate-500">
+    Built with Open Knowledge Format (OKF) & Agentic Resource Discovery (ARD) · Powered by Google Gemini & BigQuery Public Datasets
+  </footer>
+
+  <!-- Application Logic -->
+  <script>
+    lucide.createIcons();
+
+    let eventSource = null;
+    let activeCharts = [];
+
+    function switchTab(tabId) {
+      document.getElementById('view-query').classList.toggle('hidden', tabId !== 'query');
+      document.getElementById('view-catalog').classList.toggle('hidden', tabId !== 'catalog');
+      document.getElementById('view-how').classList.toggle('hidden', tabId !== 'how');
+
+      ['query', 'catalog', 'how'].forEach(t => {
+        const btn = document.getElementById('tab-' + t);
+        if (t === tabId) {
+          btn.className = "px-4 py-1.5 rounded-lg font-medium transition-all bg-brand-600 text-white shadow-sm flex items-center gap-2";
+        } else {
+          btn.className = "px-4 py-1.5 rounded-lg font-medium text-slate-400 hover:text-slate-200 transition-all flex items-center gap-2";
+        }
+      });
+      lucide.createIcons();
+    }
+
+    function setQuery(q) {
+      document.getElementById('query-input').value = q;
+      switchTab('query');
+      document.getElementById('search-form').dispatchEvent(new Event('submit'));
+    }
+
+    document.getElementById('search-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const q = document.getElementById('query-input').value.trim();
+      if (!q) return;
+      executeQuery(q);
+    });
+
+    function executeQuery(question, assumptions = null) {
+      // Reset UI
+      if (eventSource) eventSource.close();
+      activeCharts.forEach(c => c.destroy());
+      activeCharts = [];
+
+      const submitBtn = document.getElementById('submit-btn');
+      submitBtn.disabled = true;
+      
+      const tracePanel = document.getElementById('trace-panel');
+      const traceLogs = document.getElementById('trace-logs');
+      const traceStatus = document.getElementById('trace-status');
+      const resultsCanvas = document.getElementById('results-canvas');
+      const clarifyCard = document.getElementById('clarification-card');
+      const visualContainer = document.getElementById('visual-blocks-container');
+      
+      tracePanel.classList.remove('hidden');
+      resultsCanvas.classList.add('hidden');
+      clarifyCard.classList.add('hidden');
+      traceLogs.innerHTML = '';
+      visualContainer.innerHTML = '';
+      traceStatus.textContent = 'Discovering matching resources via ARD...';
+
+      const startTime = performance.now();
+      const timerInterval = setInterval(() => {
+        const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
+        document.getElementById('elapsed-time').textContent = elapsed + 's';
+      }, 100);
+
+      // Open SSE Stream
+      const url = new URL('/ask', window.location.origin);
+      url.searchParams.set('query', question);
+      url.searchParams.set('streaming', 'true');
+      url.searchParams.set('on_ambiguity', 'ask');
+      if (assumptions) {
+        url.searchParams.set('assumptions', JSON.stringify(assumptions));
+      }
+
+      eventSource = new EventSource(url.toString());
+
+      eventSource.onmessage = function(e) {
+        try {
+          const msg = JSON.parse(e.data);
+          handleStreamMessage(msg, question);
+        } catch(err) {
+          console.error("SSE parse error", err);
+        }
+      };
+
+      eventSource.onerror = function() {
+        clearInterval(timerInterval);
+        submitBtn.disabled = false;
+        eventSource.close();
+      };
+    }
+
+    function handleStreamMessage(msg, originalQuery) {
+      const type = msg.message_type;
+      const content = msg.content;
+      const traceLogs = document.getElementById('trace-logs');
+      const traceStatus = document.getElementById('trace-status');
+
+      if (type === 'intermediate_message') {
+        const line = document.createElement('div');
+        line.className = 'flex items-center gap-2 py-0.5 text-slate-300';
+        line.innerHTML = `<span class="text-brand-400">›</span> <span>${escapeHtml(content)}</span>`;
+        traceLogs.appendChild(line);
+        traceLogs.scrollTop = traceLogs.scrollHeight;
+        traceStatus.textContent = content;
+      }
+      else if (type === 'nlws') {
+        const payload = content;
+        if (payload['@type'] === 'ClarificationRequest' || payload.status === 'needs_clarification') {
+          renderClarification(payload, originalQuery);
+        } else {
+          renderResults(payload, originalQuery);
+        }
+      }
+      else if (type === 'complete' || type === 'end-nlweb-response') {
+        document.getElementById('submit-btn').disabled = false;
+        if (eventSource) eventSource.close();
+      }
+    }
+
+    function renderClarification(payload, originalQuery) {
+      const clarifyCard = document.getElementById('clarification-card');
+      const title = document.getElementById('clarify-title');
+      const desc = document.getElementById('clarify-desc');
+      const optionsContainer = document.getElementById('clarify-options');
+
+      title.textContent = "Ambiguous Measure Detected";
+      desc.textContent = payload.question || "Multiple distinct published metrics match this query. Select the exact intended metric:";
+      optionsContainer.innerHTML = '';
+
+      (payload.options || []).forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = "flex items-center justify-between p-3.5 rounded-xl bg-dark-card hover:bg-dark-hover border border-dark-border hover:border-amber-500/50 text-left transition-all group";
+        
+        const valFormatted = opt.value ? (typeof opt.value === 'number' ? '$' + opt.value.toLocaleString() : opt.value) : '';
+        
+        btn.innerHTML = `
+          <div>
+            <div class="font-semibold text-white group-hover:text-amber-300 text-sm">${escapeHtml(opt.label || opt.id)}</div>
+            <div class="text-xs text-slate-400 mt-0.5">${escapeHtml(opt.id || '')} ${opt.period ? '· ' + opt.period : ''}</div>
+          </div>
+          ${valFormatted ? `<span class="font-mono font-bold text-emerald-400 text-sm bg-emerald-950/60 px-2.5 py-1 rounded-lg border border-emerald-800/50">${valFormatted}</span>` : ''}
+        `;
+
+        btn.onclick = () => {
+          executeQuery(originalQuery, opt.assumptions || { concept: opt.id });
+        };
+
+        optionsContainer.appendChild(btn);
+      });
+
+      clarifyCard.classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function renderResults(payload, question) {
+      const resultsCanvas = document.getElementById('results-canvas');
+      const synthesizedAnswer = document.getElementById('synthesized-answer');
+      const provenanceBadge = document.getElementById('provenance-badge');
+      const visualContainer = document.getElementById('visual-blocks-container');
+
+      synthesizedAnswer.textContent = payload.answer || "No grounded answer synthesized.";
+      provenanceBadge.textContent = payload.shape ? `Shape: ${payload.shape.toUpperCase()}` : 'VERIFIED PROVENANCE';
+      
+      visualContainer.innerHTML = '';
+
+      // Call client-side visual payload formatter or inspect payload
+      const blocks = (payload.visual_payload && payload.visual_payload.blocks) || generateVisualBlocks(payload, question);
+
+      blocks.forEach((block, idx) => {
+        const blockEl = createVisualBlockElement(block, idx);
+        if (blockEl) visualContainer.appendChild(blockEl);
+      });
+
+      resultsCanvas.classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function generateVisualBlocks(payload, question) {
+      const blocks = [];
+      const data = payload.data || payload.evidence || {};
+      const shape = payload.shape || '';
+
+      // 1. Point / KPI Card
+      if (data.value !== undefined || data.value_usd !== undefined || data.total_usd !== undefined) {
+        const val = data.value !== undefined ? data.value : (data.value_usd !== undefined ? data.value_usd : data.total_usd);
+        blocks.push({
+          type: 'kpi_card',
+          title: data.measure || data.metric || 'Reported Value',
+          entity: data.company || (data.entity && data.entity.label) || 'Subject Entity',
+          value: formatValue(val, data.unit, data.currency),
+          period: data.period || '',
+          source: data.source || 'Verified Source'
+        });
+      }
+
+      // 2. Rankings / Lists / Rows -> Data Table & Bar Chart
+      const rows = data.rows || data.items || data.results || (Array.isArray(data) ? data : null);
+      if (rows && rows.length > 0) {
+        const cols = Object.keys(rows[0]).map(k => ({
+          key: k,
+          label: k.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+          type: typeof rows[0][k] === 'number' ? 'number' : 'string'
+        }));
+
+        blocks.push({
+          type: 'data_table',
+          title: 'Structured Results Table',
+          columns: cols,
+          rows: rows,
+          source: data.source || 'BigQuery Dataset'
+        });
+
+        // Numeric column for bar chart
+        const numCol = cols.find(c => c.type === 'number' && !c.key.toLowerCase().includes('id') && !c.key.toLowerCase().includes('fips'));
+        const labelCol = cols.find(c => c.type === 'string') || cols[0];
+        if (numCol && labelCol) {
+          blocks.push({
+            type: 'bar_chart',
+            title: `${numCol.label} Breakdown`,
+            x_key: labelCol.key,
+            y_key: numCol.key,
+            data: rows.slice(0, 15).map(r => ({ label: String(r[labelCol.key]), value: Number(r[numCol.key]) || 0 }))
+          });
+        }
+      }
+
+      // 3. Grant Graph
+      if (data.grants || data.edges) {
+        const grants = data.grants || data.edges;
+        blocks.push({
+          type: 'grant_network',
+          title: 'IRS 990 Grant Graph Relationships',
+          grants: grants,
+          central_entity: (data.entity && data.entity.label) || 'Target Org'
+        });
+      }
+
+      return blocks;
+    }
+
+    function createVisualBlockElement(block, idx) {
+      if (block.type === 'kpi_card') {
+        const div = document.createElement('div');
+        div.className = "glass-card rounded-2xl p-6 border border-dark-border flex flex-col gap-2";
+        div.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">${escapeHtml(block.entity || '')}</span>
+            <span class="text-xs font-mono text-slate-400">${escapeHtml(block.period || '')}</span>
+          </div>
+          <div class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">${escapeHtml(block.value || '')}</div>
+          <div class="text-xs text-slate-400 flex items-center gap-2 mt-1">
+            <span>${escapeHtml(block.title || '')}</span>
+            <span>·</span>
+            <span class="text-brand-400">${escapeHtml(block.source || '')}</span>
+          </div>
+        `;
+        return div;
+      }
+
+      if (block.type === 'bar_chart' || block.type === 'timeseries_chart') {
+        const div = document.createElement('div');
+        div.className = "glass-card rounded-2xl p-6 border border-dark-border flex flex-col gap-4";
+        const canvasId = `chart-${idx}-${Date.now()}`;
+        div.innerHTML = `
+          <div class="flex items-center justify-between">
+            <h3 class="text-base font-bold text-white">${escapeHtml(block.title || 'Chart Visualization')}</h3>
+            <span class="text-xs text-slate-400 font-mono">${block.unit || ''}</span>
+          </div>
+          <div class="relative h-64 w-full">
+            <canvas id="${canvasId}"></canvas>
+          </div>
+        `;
+
+        setTimeout(() => {
+          const canvas = document.getElementById(canvasId);
+          if (!canvas) return;
+          const ctx = canvas.getContext('2d');
+          const isBar = block.type === 'bar_chart';
+          
+          const chart = new Chart(ctx, {
+            type: isBar ? 'bar' : 'line',
+            data: {
+              labels: (block.data || []).map(d => d.label || d.period),
+              datasets: [{
+                label: block.title,
+                data: (block.data || []).map(d => d.value),
+                backgroundColor: isBar ? 'rgba(59, 130, 246, 0.8)' : 'rgba(59, 130, 246, 0.2)',
+                borderColor: '#3b82f6',
+                borderWidth: 2,
+                borderRadius: isBar ? 6 : 0,
+                fill: !isBar,
+                tension: 0.3
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: false }
+              },
+              scales: {
+                x: {
+                  grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                  ticks: { color: '#94a3b8', font: { size: 11 } }
+                },
+                y: {
+                  grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                  ticks: { color: '#94a3b8', font: { size: 11 } }
+                }
+              }
+            }
+          });
+          activeCharts.push(chart);
+        }, 50);
+
+        return div;
+      }
+
+      if (block.type === 'data_table') {
+        const div = document.createElement('div');
+        div.className = "glass-card rounded-2xl p-6 border border-dark-border flex flex-col gap-4";
+        
+        const cols = block.columns || [];
+        const rows = block.rows || [];
+
+        let thead = cols.map(c => `<th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-300 bg-dark-bg/60 border-b border-dark-border">${escapeHtml(c.label)}</th>`).join('');
+        let tbody = rows.map((r, rIdx) => {
+          let tds = cols.map(c => `<td class="px-4 py-3 text-xs text-slate-200 border-b border-dark-border/40 font-mono">${escapeHtml(String(r[c.key] !== undefined ? r[c.key] : ''))}</td>`).join('');
+          return `<tr class="hover:bg-dark-hover/50 transition-colors">${tds}</tr>`;
+        }).join('');
+
+        div.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-base font-bold text-white">${escapeHtml(block.title || 'Data Records')}</h3>
+              <p class="text-xs text-slate-400 mt-0.5">${rows.length} total records from ${escapeHtml(block.source || 'Dataset')}</p>
+            </div>
+            <button onclick="exportTableToCsv('${idx}')" class="px-3 py-1.5 rounded-lg bg-dark-card hover:bg-dark-hover border border-dark-border text-xs text-slate-300 hover:text-white flex items-center gap-1.5">
+              <i data-lucide="download" class="w-3.5 h-3.5"></i> Export CSV
+            </button>
+          </div>
+          <div class="overflow-x-auto rounded-xl border border-dark-border scrollbar-thin">
+            <table id="table-${idx}" class="w-full border-collapse">
+              <thead><tr>${thead}</tr></thead>
+              <tbody>${tbody}</tbody>
+            </table>
+          </div>
+        `;
+        return div;
+      }
+
+      if (block.type === 'grant_network') {
+        const div = document.createElement('div');
+        div.className = "glass-card rounded-2xl p-6 border border-dark-border flex flex-col gap-4";
+        const svgId = `net-${idx}-${Date.now()}`;
+        div.innerHTML = `
+          <div class="flex items-center justify-between">
+            <h3 class="text-base font-bold text-white">${escapeHtml(block.title || 'IRS 990 Grant Flow Network')}</h3>
+            <span class="text-xs text-slate-400">Interactive Graph Visualization</span>
+          </div>
+          <div class="relative h-72 w-full bg-dark-bg/60 rounded-xl border border-dark-border flex items-center justify-center overflow-hidden">
+            <svg id="${svgId}" class="w-full h-full"></svg>
+          </div>
+        `;
+
+        setTimeout(() => {
+          renderD3Network(svgId, block);
+        }, 50);
+
+        return div;
+      }
+
+      return null;
+    }
+
+    function renderD3Network(svgId, block) {
+      const svg = d3.select('#' + svgId);
+      if (!svg.node()) return;
+      const width = svg.node().getBoundingClientRect().width || 600;
+      const height = svg.node().getBoundingClientRect().height || 280;
+
+      const nodes = block.nodes || [
+        { id: 'center', label: block.central_entity || 'Target', type: 'target' },
+        ...((block.grants || []).slice(0, 8).map((g, i) => ({
+          id: 'p' + i,
+          label: g.funder_name || g.recipient_name || ('Partner ' + (i+1)),
+          amount: g.amount || 0
+        })))
+      ];
+
+      const links = block.links || (nodes.slice(1).map(n => ({
+        source: n.id,
+        target: 'center'
+      })));
+
+      const simulation = d3.forceSimulation(nodes)
+        .force("link", d3.forceLink(links).id(d => d.id).distance(80))
+        .force("charge", d3.forceManyBody().strength(-180))
+        .force("center", d3.forceCenter(width / 2, height / 2));
+
+      const link = svg.append("g")
+        .selectAll("line")
+        .data(links)
+        .join("line")
+        .attr("stroke", "#3b82f6")
+        .attr("stroke-opacity", 0.6)
+        .attr("stroke-width", 2);
+
+      const node = svg.append("g")
+        .selectAll("g")
+        .data(nodes)
+        .join("g")
+        .call(d3.drag()
+          .on("start", (event, d) => { if (!event.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
+          .on("drag", (event, d) => { d.fx = event.x; d.fy = event.y; })
+          .on("end", (event, d) => { if (!event.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; }));
+
+      node.append("circle")
+        .attr("r", d => d.type === 'target' ? 18 : 12)
+        .attr("fill", d => d.type === 'target' ? '#3b82f6' : '#10b981')
+        .attr("stroke", "#fff")
+        .attr("stroke-width", 2);
+
+      node.append("text")
+        .attr("dx", 16)
+        .attr("dy", 4)
+        .text(d => d.label)
+        .attr("font-size", "11px")
+        .attr("fill", "#e2e8f0");
+
+      simulation.on("tick", () => {
+        link
+          .attr("x1", d => d.source.x)
+          .attr("y1", d => d.source.y)
+          .attr("x2", d => d.target.x)
+          .attr("y2", d => d.target.y);
+
+        node.attr("transform", d => `translate(${d.x},${d.y})`);
+      });
+    }
+
+    function exportTableToCsv(tableIdx) {
+      const table = document.getElementById(`table-${tableIdx}`);
+      if (!table) return;
+      let csv = [];
+      for (let row of table.rows) {
+        let cols = [];
+        for (let cell of row.cells) {
+          cols.push('"' + cell.innerText.replace(/"/g, '""') + '"');
+        }
+        csv.push(cols.join(','));
+      }
+      const csvBlob = new Blob([csv.join('\n')], { type: 'text/csv' });
+      const url = URL.createObjectURL(csvBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `neural_kg_data_export_${Date.now()}.csv`;
+      a.click();
+    }
+
+    function formatValue(val, unit, currency) {
+      if (val === undefined || val === null) return 'N/A';
+      if (typeof val === 'number') {
+        if (currency === 'USD' || (unit && unit.includes('$'))) {
+          if (val >= 1e9) return '$' + (val / 1e9).toFixed(2) + 'B';
+          if (val >= 1e6) return '$' + (val / 1e6).toFixed(2) + 'M';
+          return '$' + val.toLocaleString();
+        }
+        if (unit === '%' || (unit && unit.toLowerCase().includes('percent'))) {
+          return val.toFixed(2) + '%';
+        }
+        return val.toLocaleString() + (unit ? ' ' + unit : '');
+      }
+      return String(val) + (unit ? ' ' + unit : '');
+    }
+
+    function escapeHtml(str) {
+      return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+  </script>
+</body>
+</html>
+"""

@@ -1,0 +1,49 @@
+{
+  "hosting": {
+    "public": "frontend/out",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "/api/**",
+        "run": {
+          "serviceId": "neural-kg-engine",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/ask",
+        "run": {
+          "serviceId": "neural-kg-engine",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/healthz",
+        "run": {
+          "serviceId": "neural-kg-engine",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/sources",
+        "run": {
+          "serviceId": "neural-kg-engine",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  },
+  "apphosting": {
+    "backend": {
+      "rootDirectory": "frontend"
+    }
+  }
+}

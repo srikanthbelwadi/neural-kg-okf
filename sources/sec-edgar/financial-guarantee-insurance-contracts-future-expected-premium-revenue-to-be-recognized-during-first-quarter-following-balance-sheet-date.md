@@ -1,0 +1,31 @@
+---
+type: Financial Statement Concept
+title: Financial Guarantee Insurance Contract, Premium Revenue to be Recognized, First
+  Quarter — SEC EDGAR
+description: Amount of premium revenue under financial guarantee insurance contract
+  to be recognized in next fiscal quarter following current fiscal year. Excludes
+  interim and annual periods when interim periods are reported from current statement
+  of financial position date (rolling approach).
+tags:
+- finance
+- sec
+- edgar
+- us-gaap
+- financial
+- guarantee
+- insurance
+- contracts
+source: ./_access.md
+taxonomy: us-gaap
+concept: FinancialGuaranteeInsuranceContractsFutureExpectedPremiumRevenueToBeRecognizedDuringFirstQuarterFollowingBalanceSheetDate
+periodType: instant
+unit: currency
+representativeQueries:
+- What is the premium revenue to be recognized in the first quarter?
+- How much premium revenue will we recognize next quarter?
+- Can you provide the amount of premium revenue for the upcoming quarter?
+---
+
+# Schema
+
+Reports the `us-gaap:FinancialGuaranteeInsuranceContractsFutureExpectedPremiumRevenueToBeRecognizedDuringFirstQuarterFollowingBalanceSheetDate` concept (instant) per company, by fiscal period, from SEC filings. Query by `cik` via the linked source's `company_concept` operation; see [SEC EDGAR access](./_access.md).
