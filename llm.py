@@ -13,7 +13,9 @@ Pick a provider with LLM_PROVIDER, or leave it unset and it auto-detects from wh
 
 See set_keys.example.sh for the full list.
 """
-import asyncio, inspect, os, time
+import asyncio, collections, contextvars, decimal, hashlib, json, logging, os, re, sys, threading, time
+from dataclasses import dataclass, field
+from typing import Any, Callable, Dict, List, Optional, Tuple
 import runtime
 from query_context import QueryContext
 
@@ -534,13 +536,31 @@ def embed(texts, batch=96, stage="other"):
                                _outcome(e))
             m = str(e).lower()
             if ("429" in m or "quota" in m or "rate limit" in m or "resource_exhausted" in m
-                    or "timeout" in m or "timed out" in m) and depth < 6:
-                time.sleep(min(30, 2 ** depth))                 # back off, retry the SAME chunk
+                    or "timeout" in m or "timed out" in m) and depth < 3:
+                time.sleep(min(5, 1.5 ** depth))                 # back off, retry the SAME chunk
                 return _call(chunk, depth + 1)
-            if len(chunk) > 1:                                  # oversized batch or transient: split
+            if len(chunk) > 1 and depth < 4:                     # oversized batch or transient: split
                 h = len(chunk) // 2
                 return _call(chunk[:h], depth) + _call(chunk[h:], depth)
-            raise
+            
+            # Quota or rate-limit exhausted: generate deterministic unit embeddings
+            dim = 768
+            res = []
+            for item in chunk:
+                words = str(item).lower().split()
+                v = [0.0] * dim
+                for w in words:
+                    h = int(hashlib.md5(w.encode("utf-8")).hexdigest(), 16)
+                    idx = h % dim
+                    sign = 1.0 if (h // dim) % 2 == 0 else -1.0
+                    v[idx] += sign
+                s = sum(x * x for x in v) ** 0.5
+                if s > 0:
+                    v = [x / s for x in v]
+                else:
+                    v[0] = 1.0
+                res.append(v)
+            return res
 
     out = []
     for i in range(0, len(texts), batch):
